@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/tx 
+	http://www.springframework.org/schema/tx/spring-tx.xsd">
+	
+	<!-- 开启注解扫描 -->
+	<context:component-scan base-package="com.hd"/>
+	
+	<!-- 没有扫描的情况下，使用属性注入的注解:@Resource@Value@Autowired@Qulifier 
+		类的管理还得配置<bean>-->
+	<context:annotation-config/>
+	
+	<!-- 配置c3p0连接池 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+    	<property name="driverClass" value="com.mysql.jdbc.Driver"/>
+    	<property name="jdbcUrl" value="jdbc:mysql:///crm_ssh"/>
+    	<property name="user" value="root"/>
+    	<property name="password" value="root"/>
+    </bean>
+	
+	<!-- 加载hibernate.cfg.xml,获取sessionFactory 注意：不要配置hibernate中绑定事务-->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!-- 加载c3p0连接池 -->
+		<property name="dataSource" ref="dataSource"/>
+		<!-- 配置方言+可选 -->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+		<!-- 配置映射配置文件 -->
+		<property name="mappingResources">
+			<list>
+				<value>com/hd/entity/User.hbm.xml</value>
+				<value>com/hd/entity/Customer.hbm.xml</value>
+				<value>com/hd/entity/BaseDict.hbm.xml</value>
+				<value>com/hd/entity/LinkMan.hbm.xml</value>
+				<value>com/hd/entity/SaleVisit.hbm.xml</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	
+	<!-- 开启事务的注解 -->
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	
+<!-- 配置客户模块 -->
+	<!-- 配置Action -->
+	<bean id="customerAction" class="com.hd.web.action.CustomerAction" scope="prototype">
+		<property name="customerService" ref="customerService"/>
+	</bean>
+	
+	<!-- 配置Service层 -->
+	<bean id="customerService" class="com.hd.service.impl.CustomerServiceImpl">
+		<property name="customerDao" ref="customerDao"/>
+	</bean>
+	
+	<!-- 配置Dao层 -->
+	<bean id="customerDao" class="com.hd.dao.impl.CustomerDaoImpl">
+		<!-- 注入hibernateTemplate -->
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+<!-- 配置用户模块 -->
+	<!-- 配置Action -->
+	<bean id="userAction" class="com.hd.web.action.UserAction" scope="prototype">
+		<property name="userService" ref="userService"/>
+	</bean>
+	
+	<!-- 配置Service -->
+	<bean id="userService" class="com.hd.service.impl.UserServiceImpl">
+		<property name="userDao" ref="userDao"/>
+	</bean>
+	
+	<!-- 配置Dao -->
+	<bean id="userDao" class="com.hd.dao.impl.UserDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+<!-- 配置字典模块 -->
+	<!-- 配置Action -->
+	<bean id="baseDictAction" class="com.hd.web.action.BaseDictAction" scope="prototype">
+		<property name="baseDictService" ref="baseDictService"/>
+	</bean>
+
+	<!-- 配置Service -->
+	<bean id="baseDictService" class="com.hd.service.impl.BaseDictServiceImpl">
+		<property name="baseDictDao" ref="baseDictDao"/>
+	</bean>
+	
+	<!-- 配置Dao -->
+	<bean id="baseDictDao" class="com.hd.dao.impl.BaseDictDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+<!-- 配置联系人模块 -->
+	<!-- 配置Action -->
+	<bean id="linkManAction" class="com.hd.web.action.LinkManAction" scope="prototype">
+		<property name="linkManService" ref="linkManService"/>
+		<property name="customerService" ref="customerService"/>
+	</bean>
+	
+	<!-- 配置Service -->
+	<bean id="linkManService" class="com.hd.service.impl.LinkManServiceImpl">
+		<property name="linkManDao" ref="linkManDao"/>
+	</bean>
+		
+	<!-- 配置dao -->
+	<bean id="linkManDao" class="com.hd.dao.impl.LinkManDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+<!-- 配置客户拜访记录模块 -->	
+	<!-- 配置Action -->
+	<bean id="saleVisitAction" class="com.hd.web.action.SaleVisitAction" scope="prototype">
+	</bean>
+
+	<!-- 配置service -->
+	<bean id="saleVisitService" class="com.hd.service.impl.SaleVisitServiceImpl">
+	</bean>
+
+	<!-- 配置dao -->
+	<bean id="saleVisitDao" class="com.hd.dao.impl.SaleVisitDaoImpl">
+		<!-- 不是自己定义的类不能属性注入 -->
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+</beans>
+
+
+
+
+
+
+
+
+
+
+
+
